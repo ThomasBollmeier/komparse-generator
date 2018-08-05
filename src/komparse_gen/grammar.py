@@ -3,7 +3,7 @@ Grammar for parser generator
 """
 
 from komparse import Grammar as BaseGrammar, \
-    Sequence, OneOf, OneOrMore, Optional, Many
+    Sequence, OneOf, OneOrMore, Optional, Many, Ast
 
 class Grammar(BaseGrammar):
     
@@ -74,7 +74,7 @@ class Grammar(BaseGrammar):
             Optional(self.annotation('annot')),
             self.RULE_ID('rule_id'),
             self.ARROW(),
-            self.branches(), 
+            self.branches('rhs'), 
             self.SEMICOLON()
         ))
         
@@ -111,6 +111,63 @@ class Grammar(BaseGrammar):
             self.PLUS(),
             self.ASTERISK()
         ))
+        
+        self._init_transforms()
+        
+    def _init_transforms(self):
+        
+        self.set_ast_transform('tokenrule', self._trans_tokenrule)
+        self.set_ast_transform('commentdef', self._trans_commentdef)
+        self.set_ast_transform('stringdef', self._trans_stringdef)
+        self.set_ast_transform('tokendef', self._trans_tokendef)
+        
+        self.set_ast_transform('productionrule', self._trans_productionrule)
+        
+    def _trans_tokenrule(self, ast):
+        return ast.get_children()[0]
+    
+    def _trans_commentdef(self, ast):
+        ret = Ast('commentdef')
+        start = ast.find_children_by_id('start')[0]
+        end = ast.find_children_by_id('end')[0]
+        ret.add_child(Ast('start', start.value))
+        ret.add_child(Ast('end', end.value))
+        return ret
+
+    def _trans_stringdef(self, ast):
+        ret = Ast('stringdef')
+        start = ast.find_children_by_id('start')[0]
+        end = ast.find_children_by_id('end')[0]
+        escs = ast.find_children_by_id('escape')
+        esc = escs and escs[0].value or None
+        ids = ast.find_children_by_id('token_id')
+        token_id = ids and ids[0].value or 'STRING'
+        ret.add_child(Ast('id', token_id))
+        ret.add_child(Ast('start', start.value))
+        ret.add_child(Ast('end', end.value))
+        if esc is not None:
+            ret.add_child(Ast('escape', esc))
+        return ret
+    
+    def _trans_tokendef(self, ast):
+        ret = Ast('tokendef')
+        token_id = ast.find_children_by_id('token_id')[0]
+        regex = ast.find_children_by_id('regex')[0]
+        ret.add_child(Ast('id', token_id.value))
+        ret.add_child(Ast('regex', regex.value))
+        return ret
+    
+    def _trans_productionrule(self, ast):
+        ret = Ast('ruledef')
+        annots = ast.find_children_by_id('annot')
+        if annots:
+            ret.set_attr('start', "true")
+        id_ = ast.find_children_by_id('rule_id')[0]
+        ret.add_child(Ast('id', id_.value))
+        rhs = ast.find_children_by_id('rhs')[0]
+        rhs.id = ""
+        ret.add_child(rhs)
+        return ret
     
     
 if __name__ == "__main__":
@@ -121,6 +178,11 @@ if __name__ == "__main__":
     -- Test grammar
     
     -- tokens:
+    
+    comment '//' '\\n';
+    
+    string '#'' '#'' STR;
+    string '{' '}' '\\' TEMPLATE_STR;
     
     token PLUS '\+';
     token MULT '\*';
