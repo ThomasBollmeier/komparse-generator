@@ -33,6 +33,8 @@ class Grammar(BaseGrammar):
         self.add_token('AT', "@")
         self.add_token('TOKEN_ID', "[A-Z][A-Z0-9_]*")
         self.add_token('RULE_ID', "[a-z][a-z0-9_]*")
+        self.add_token('ID', "[a-z][a-z0-9_]*")
+        self.add_token('HASH', '#')
     
     def _init_rules(self):
         
@@ -91,13 +93,33 @@ class Grammar(BaseGrammar):
             ))
         ))
         
-        self.rule('branch', Sequence(
-            OneOrMore(OneOf(
-                self.TOKEN_ID('token_id'),
-                self.RULE_ID('rule_id'),
-                self.group('group')
-            )),
-            Optional(self.cardinality('card'))
+        self.rule('branch', OneOrMore(
+            Sequence(
+                OneOf(
+                    self.tokenref(),
+                    self.ruleref(),
+                    self.group()
+                ),
+                Optional(self.cardinality('card'))
+            )
+        ))
+        
+        self.rule('tokenref', OneOf(
+            Sequence(
+                self.ID('id'),
+                self.HASH(),
+                self.TOKEN_ID()
+            ),
+            self.TOKEN_ID()
+        ))
+
+        self.rule('ruleref', OneOf(
+            Sequence(
+                self.ID('id'),
+                self.HASH(),
+                self.RULE_ID()
+            ),
+            self.RULE_ID()
         ))
         
         self.rule('group', Sequence(
@@ -122,6 +144,11 @@ class Grammar(BaseGrammar):
         self.set_ast_transform('tokendef', self._trans_tokendef)
         
         self.set_ast_transform('productionrule', self._trans_productionrule)
+        self.set_ast_transform('branches', self._trans_branches)
+        self.set_ast_transform('branch', self._trans_branch)
+        self.set_ast_transform('group', self._trans_group)
+        self.set_ast_transform('tokenref', self._trans_tokenref)
+        self.set_ast_transform('ruleref', self._trans_ruleref)
         
     def _trans_tokenrule(self, ast):
         return ast.get_children()[0]
@@ -169,6 +196,58 @@ class Grammar(BaseGrammar):
         ret.add_child(rhs)
         return ret
     
+    def _trans_branches(self, ast):
+        ret = Ast('oneof')
+        ret.add_children_by_id(ast, 'branch')
+        children = ret.get_children()
+        if len(children) != 1:
+            return ret
+        else:
+            return children[0]
+        
+    def _trans_branch(self, ast):
+        ret = Ast('sequence')
+        children = ast.get_children()
+        prev = None
+        for child in children:
+            if child.id == 'card':
+                card_child = child.get_children()[0]
+                cardinality = {
+                    '?': 'optional',
+                    '+': 'one-or-more',
+                    '*': 'many'
+                }[card_child.value]
+                prev.set_attr('cardinality', cardinality)
+            else:
+                ret.add_child(child)
+                prev = child
+                
+        if len(ret.get_children()) != 1:
+            return ret
+        else:
+            return prev
+    
+    def _trans_group(self, ast):
+        return ast.get_children()[1]
+    
+    def _trans_tokenref(self, ast):
+        children = ast.get_children()
+        if len(children) == 1:
+            return Ast('tokenref', children[0].value)
+        else:
+            ret = Ast('tokenref', children[2].value)
+            ret.set_attr('data-id', children[0].value)
+            return ret
+
+    def _trans_ruleref(self, ast):
+        children = ast.get_children()
+        if len(children) == 1:
+            return Ast('ruleref', children[0].value)
+        else:
+            ret = Ast('ruleref', children[2].value)
+            ret.set_attr('data-id', children[0].value)
+            return ret
+    
     
 if __name__ == "__main__":
     
@@ -193,20 +272,20 @@ if __name__ == "__main__":
     -- production rules:
     
     @start
-    expr -> prod  (PLUS prod)*;
+    expr -> p#prod (PLUS p#prod)*;
     
-    prod -> factor (MULT factor)*;
+    prod -> f#factor (MULT f#factor)*;
     
-    factor -> INT | LPAR expr RPAR;
+    factor -> val#INT | LPAR val#expr RPAR;
     
     """
     
     g = Grammar()
-    scanner = Scanner(StringStream(code), g)
-    
-    while scanner.has_next():
-        token = scanner.advance()
-        print(token)
+ 
+ #   scanner = Scanner(StringStream(code), g)
+ #   while scanner.has_next():
+ #       token = scanner.advance()
+ #       print(token)
     
     parser = Parser(g)
     ast = parser.parse(code)
