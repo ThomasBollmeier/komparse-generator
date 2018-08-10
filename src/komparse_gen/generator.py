@@ -15,8 +15,13 @@ class Generator(object):
         if not ast:
             raise Exception(self._parser.error())
         
+        #print(ast.to_xml())
+        #return
+        
         self._output = output
         self._indent_level = 0
+        self._sequences = {}
+        self._oneofs = {}
         
         tokens, rules = self._get_tokens_and_rules(ast)
         
@@ -93,9 +98,42 @@ class Generator(object):
     def _wrt_init_rules(self, rules):
         self._writeln("def _init_rules(self):")
         self._indent()
-        self._writeln("pass")
+        for rule in rules:
+            self._wrt_rule(rule)
         self._dedent()
         
+    def _wrt_rule(self, rule):
+        id_, content = rule.get_children()
+        call = self._get_call(content)
+        is_start = rule.has_attr('start') and rule.get_attr('start') == "true"
+        if not is_start:
+            line = "self.rule('{}', {})".format(id_.value, call)
+        else:
+            line = "self.rule('{}', {}, is_root=True)".format(id_.value, call)
+        self._writeln(line)
+            
+    def _get_call(self, content):
+        name = content.name
+        id_ = ""
+        if name == "oneof":
+            num_oneofs = len(self._oneofs) + 1
+            func_name = "_oneof_{}".format(num_oneofs)
+            self._oneofs[func_name] = content
+        elif name == "sequence":
+            num_seqs = len(self._sequences) + 1
+            func_name = "_seq_{}".format(num_seqs)
+            self._sequences[func_name] = content
+        elif name in ["ruleref", "tokenref"]:
+            func_name = content.value
+            if content.has_attr('data-id'):
+                id_ = content.get_attr('data-id')
+        else:
+            raise RuntimeError("Unknown content")
+        
+        call = "self." + func_name + "(" + id_ + ")"
+        
+        return call
+            
     def _wrt_imports(self):
         self._writeln("from komparse import Parser, Grammar, Sequence, OneOf, \\")
         self._indent()
