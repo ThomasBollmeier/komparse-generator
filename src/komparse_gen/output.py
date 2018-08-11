@@ -15,7 +15,7 @@ class Output(object):
         raise NotImplementedError
 
     def writeln(self, text):
-        self.write(text + os.linesep)
+        self.write(text + "\n")
         
 
 class StdOut(Output):
@@ -25,3 +25,23 @@ class StdOut(Output):
     
     def write(self, text):
         print(text, end="")
+        
+        
+class FileOut(Output):
+    
+    def __init__(self, filepath):
+        Output.__init__(self)
+        self._filepath = filepath
+        self._fp = None
+        
+    def open(self):
+        self._fp = open(self._filepath, "w")
+        
+    def close(self):
+        if self._fp:
+            self._fp.close()
+            self._fp = None
+    
+    def write(self, text):
+        self._fp.write(text)
+    
