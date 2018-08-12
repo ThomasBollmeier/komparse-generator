@@ -1,3 +1,20 @@
+"""
+Copyright 2018 Thomas Bollmeier <entwickler@tbollmeier.de>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""   
+import sys
+import os
 from komparse import Parser
 from .grammar import Grammar
 from .output import StdOut, FileOut
@@ -205,35 +222,32 @@ class Generator(object):
         
     def _dedent(self):
         self._indent_level -= 1
+
+
+def _read_file_content(filepath):
+    content = ""
+    fp = open(filepath, "r")
+    lines = fp.readlines()
+    fp.close()
+    for line in lines:
+        content += line
+    return content
+
+
+def generate():
         
-        
-        
-if __name__ == "__main__":
+    num_args = len(sys.argv) - 1
+    if num_args == 1:
+        grammar_file = sys.argv[1]
+        output = StdOut()
+    elif num_args == 2:
+        grammar_file = sys.argv[1]
+        output = FileOut(sys.argv[2])
+    else:
+        print("Syntax: komparsegen <grammar_file> [<output_file>]")
+        return
     
-    grammar_source = """
-    -- Test grammar
+    prefix = os.path.basename(grammar_file).split(".")[0]
+    code = _read_file_content(grammar_file)
     
-    -- tokens:
-    
-    comment '//' '\\n';
-    
-    string '\#'' '\#'' STR;
-    string '{' '}' '\\\\' TEMPLATE_STR;
-    
-    token PLUS '\+';
-    token MULT '\*';
-    token LPAR '\(';
-    token RPAR '\)';
-    token INT '\d+';
-    
-    -- production rules:
-    
-    @start
-    expr -> p#prod (PLUS p#prod)*;
-    
-    prod -> f#factor (MULT f#factor)*;
-    
-    factor -> val#INT | LPAR val#expr RPAR;
-    """
-    
-    Generator().generate(grammar_source, "expr", FileOut("expr_parser.py"))
+    Generator().generate(code, prefix, output)

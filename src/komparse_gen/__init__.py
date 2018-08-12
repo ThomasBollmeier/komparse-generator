@@ -1,2 +1,2 @@
 from .output import StdOut, FileOut
-from .generator import Generator
+from .generator import generate

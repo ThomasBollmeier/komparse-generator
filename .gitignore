@@ -1,1 +1,4 @@
 src/komparse_gen/__pycache__
+build/
+dist/
+komparse_generator.egg-info/
