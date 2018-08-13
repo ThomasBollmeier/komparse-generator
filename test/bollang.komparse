@@ -1,0 +1,15 @@
+-- My new language
+
+case_sensitive off;
+
+comment ';' '\\n';
+string '\#'' '\#'' STR;
+token LBRACE '{';
+token RBRACE '}';
+
+-- Rules
+
+@start
+statement -> objectdef*;
+
+objectdef -> 'object' LBRACE RBRACE;

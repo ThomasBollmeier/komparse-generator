@@ -28,11 +28,14 @@ class Grammar(BaseGrammar):
         self.add_comment("--", "\n")
         self.add_string("'", "'", '#', 'STR')
         
+        self.add_keyword('case_sensitive')
         self.add_keyword('comment')
         self.add_keyword('string')
         self.add_keyword('token')
         self.add_keyword('start')
-        
+
+        self.add_token('ON', 'on')
+        self.add_token('OFF', 'off')
         self.add_token('ARROW', "->")
         self.add_token('LPAR', "\(")
         self.add_token('RPAR', "\)")
@@ -50,9 +53,18 @@ class Grammar(BaseGrammar):
     def _init_rules(self):
         
         self.rule('komparse_grammar', OneOrMore(OneOf(
+            self.configstmt(),
             self.tokenrule(),
             self.productionrule()
         )), is_root=True)
+        
+        self.rule('configstmt', Sequence(
+            self.CASE_SENSITIVE(),
+            OneOf(
+                self.ON(),
+                self.OFF()
+            ),
+            self.SEMICOLON()))
         
         self.rule('tokenrule', OneOf(
             self.commentdef(),
@@ -107,6 +119,7 @@ class Grammar(BaseGrammar):
         self.rule('branch', OneOrMore(
             Sequence(
                 OneOf(
+                    self.STR("keyword"),
                     self.tokenref(),
                     self.ruleref(),
                     self.group()
@@ -149,6 +162,7 @@ class Grammar(BaseGrammar):
         
     def _init_transforms(self):
         
+        self.set_ast_transform('configstmt', self._trans_configstmt)
         self.set_ast_transform('tokenrule', self._trans_tokenrule)
         self.set_ast_transform('commentdef', self._trans_commentdef)
         self.set_ast_transform('stringdef', self._trans_stringdef)
@@ -161,6 +175,10 @@ class Grammar(BaseGrammar):
         self.set_ast_transform('tokenref', self._trans_tokenref)
         self.set_ast_transform('ruleref', self._trans_ruleref)
         
+    def _trans_configstmt(self, ast):
+        state = ast.get_children()[1].value
+        return Ast('case_sensitive', state)
+    
     def _trans_tokenrule(self, ast):
         return ast.get_children()[0]
     
@@ -230,12 +248,15 @@ class Grammar(BaseGrammar):
                 }[card_child.value]
                 prev.set_attr('cardinality', cardinality)
             else:
+                if child.id == "keyword":
+                    child = Ast('keyword', child.value)
                 ret.add_child(child)
                 prev = child
                 
         if len(ret.get_children()) != 1:
             return ret
         else:
+            
             return prev
     
     def _trans_group(self, ast):

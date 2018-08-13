@@ -39,7 +39,9 @@ class Generator(object):
         self._num_oneofs = 0
         self._oneofs = {}
         
+        case_sensitive = self._is_case_sensitive(ast)
         tokens, rules = self._get_tokens_and_rules(ast)
+        self._find_keywords(ast)
         
         self._output.open()
         
@@ -52,7 +54,7 @@ class Generator(object):
             self._writeln()
             self._writeln("def __init__(self):")
             self._indent()
-            self._writeln("Grammar.__init__(self)")
+            self._writeln("Grammar.__init__(self, case_sensitive={})".format(case_sensitive))
             self._writeln("self._init_tokens()")
             self._writeln("self._init_rules()")
             self._dedent()
@@ -79,6 +81,14 @@ class Generator(object):
             
         self._output.close()
         
+    def _is_case_sensitive(self, ast):
+        case_sensitive = True
+        for child in ast.get_children():
+            if child.name == "case_sensitive":
+                case_sensitive = child.value == "on"
+                break
+        return case_sensitive
+        
     def _get_tokens_and_rules(self, ast):
         tokens = []
         rules = []
@@ -88,6 +98,21 @@ class Generator(object):
             else:
                 tokens.append(child)
         return tokens, rules
+    
+    def _find_keywords(self, ast):
+        self._keywords = {}
+        ast.walk(self)
+        
+    def enter_node(self, node):
+        pass
+    
+    def exit_node(self, node):
+        pass
+        
+    def visit_node(self, node):
+        if node.name == "keyword":
+            kw = node.value
+            self._keywords[kw.upper()] = kw
         
     def _wrt_init_tokens(self, tokens):
         self._writeln("def _init_tokens(self):")
@@ -99,6 +124,8 @@ class Generator(object):
                 self._wrt_stringdef(token)
             elif token.name == "tokendef":
                 self._wrt_tokendef(token)
+        for kw in self._keywords.values():
+            self._writeln("self.add_keyword('{}')".format(kw))
         self._dedent()
         
     def _wrt_commentdef(self, commentdef):
@@ -170,6 +197,8 @@ class Generator(object):
             func_name = content.value
             if content.has_attr('data-id'):
                 id_ = content.get_attr('data-id')
+        elif name == "keyword":
+            func_name = content.value.upper()
         else:
             raise RuntimeError("Unknown content")
         
