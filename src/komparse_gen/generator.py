@@ -15,6 +15,7 @@ Copyright 2018 Thomas Bollmeier <entwickler@tbollmeier.de>
 """   
 import sys
 import os
+from argparse import ArgumentParser
 from komparse import Parser
 from .grammar import Grammar
 from .output import StdOut, FileOut
@@ -26,7 +27,7 @@ class Generator(object):
         self._parser = Parser(Grammar())
         self._tabsize = tabsize
     
-    def generate(self, grammar_source, prefix, output=StdOut()):
+    def generate(self, grammar_source, parser_name, output=StdOut()):
         
         ast = self._parser.parse(grammar_source)
         if not ast:
@@ -49,7 +50,7 @@ class Generator(object):
             self._wrt_imports()
             self._writeln()
             self._writeln()
-            self._writeln("class {}Grammar(Grammar):".format(prefix.capitalize()))
+            self._writeln("class _Grammar(Grammar):")
             self._indent()
             self._writeln()
             self._writeln("def __init__(self):")
@@ -67,14 +68,15 @@ class Generator(object):
             self._wrt_oneofs()
             self._writeln()
             self._dedent()
-            self._writeln("class {}Parser(Parser):".format(prefix.capitalize()))
+            self._writeln("class {}(Parser):".format(parser_name))
             self._indent()
             self._writeln()
             self._writeln("def __init__(self):")
             self._indent()
-            self._writeln("Parser.__init__(self, {}Grammar())".format(prefix.capitalize()))
+            self._writeln("Parser.__init__(self, _Grammar())")
             self._writeln()
             self._dedent()
+            self._writeln()
         except Exception as exc:
             self._output.close()
             raise exc
@@ -264,19 +266,31 @@ def _read_file_content(filepath):
 
 
 def generate():
-        
-    num_args = len(sys.argv) - 1
-    if num_args == 1:
-        grammar_file = sys.argv[1]
-        output = StdOut()
-    elif num_args == 2:
-        grammar_file = sys.argv[1]
-        output = FileOut(sys.argv[2])
-    else:
-        print("Syntax: komparsegen <grammar_file> [<output_file>]")
-        return
     
-    prefix = os.path.basename(grammar_file).split(".")[0]
+    parser = ArgumentParser('Generate a parser')
+    parser.add_argument('grammar_file')
+    parser.add_argument('-o', '--outfile',
+                        help='filepath to store the generated parser',
+                        dest='outfile')
+    parser.add_argument('-n', '--name',
+                        help='name of the parser',
+                        dest='parser_name')
+    
+    args = parser.parse_args()
+    
+    grammar_file = args.grammar_file
+    
+    if args.parser_name:
+        parser_name = args.parser_name
+    else:
+        parser_name = os.path.basename(grammar_file).split(".")[0]
+        parser_name = parser_name.capitalize() + "Parser"
+        
+    if args.outfile:
+        output = FileOut(args.outfile)
+    else:
+        output = StdOut()
+        
     code = _read_file_content(grammar_file)
     
-    Generator().generate(code, prefix, output)
+    Generator().generate(code, parser_name, output)
