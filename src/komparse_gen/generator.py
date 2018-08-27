@@ -213,7 +213,7 @@ class Generator(object):
             card = content.get_attr('cardinality')
             call = {
                 "optional": "Optional(" + call + ")",
-                "one-or-more": "OneOreMore(" + call + ")",
+                "one-or-more": "OneOrMore(" + call + ")",
                 "many": "Many(" + call + ")"
             }[card]
                 
