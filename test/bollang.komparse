@@ -1,8 +1,9 @@
 -- My new language
 
 case_sensitive off;
+whitespace ' ', '\n';
 
-comment ';' '\\n';
+comment ';' '\n';
 string '\#'' '\#'' STR;
 token LBRACE '{';
 token RBRACE '}';

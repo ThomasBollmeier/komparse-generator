@@ -41,6 +41,7 @@ class Generator(object):
         self._oneofs = {}
         
         case_sensitive = self._is_case_sensitive(ast)
+        wspace = self._get_whitespace(ast) 
         tokens, rules = self._get_tokens_and_rules(ast)
         self._find_keywords(ast)
         
@@ -55,7 +56,7 @@ class Generator(object):
             self._writeln()
             self._writeln("def __init__(self):")
             self._indent()
-            self._writeln("Grammar.__init__(self, case_sensitive={})".format(case_sensitive))
+            self._writeln("Grammar.__init__(self, case_sensitive={}, wspace={})".format(case_sensitive, wspace))
             self._writeln("self._init_tokens()")
             self._writeln("self._init_rules()")
             self._dedent()
@@ -90,6 +91,24 @@ class Generator(object):
                 case_sensitive = child.value == "on"
                 break
         return case_sensitive
+    
+    def _get_whitespace(self, ast):
+        ws = ast.find_children_by_name('whitespace')
+        if ws:
+            ws = ws[0]
+            ret = []
+            for wschar in ws.get_children():
+                v = wschar.value
+                if v == "\\n":
+                    v = "\n"
+                elif v == "\\t":
+                    v = "\t"
+                elif v == "\\r":
+                    v = "\r"
+                ret.append(v)
+            return ret
+        else:
+            return [" ", "\t", "\r", "\n"]
         
     def _get_tokens_and_rules(self, ast):
         tokens = []

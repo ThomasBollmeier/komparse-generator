@@ -33,6 +33,7 @@ class Grammar(BaseGrammar):
         self.add_keyword('string')
         self.add_keyword('token')
         self.add_keyword('start')
+        self.add_keyword('whitespace')
 
         self.add_token('ON', 'on')
         self.add_token('OFF', 'off')
@@ -43,6 +44,7 @@ class Grammar(BaseGrammar):
         self.add_token('PLUS', "\+")
         self.add_token('ASTERISK', "\*")
         self.add_token('PIPE', "\|")
+        self.add_token('COMMA', ",")
         self.add_token('SEMICOLON', ";")
         self.add_token('AT', "@")
         self.add_token('TOKEN_ID', "[A-Z][A-Z0-9_]*")
@@ -58,12 +60,24 @@ class Grammar(BaseGrammar):
             self.productionrule()
         )), is_root=True)
         
-        self.rule('configstmt', Sequence(
+        self.rule('configstmt', OneOf(
+            self.case_sensitive(),
+            self.whitespace()))
+        
+        self.rule('case_sensitive', Sequence(
             self.CASE_SENSITIVE(),
             OneOf(
                 self.ON(),
                 self.OFF()
             ),
+            self.SEMICOLON()))
+        
+        self.rule('whitespace', Sequence(
+            self.WHITESPACE(),
+            self.STR('wschars'),
+            Many(Sequence(
+                self.COMMA(),
+                self.STR('wschars'))),
             self.SEMICOLON()))
         
         self.rule('tokenrule', OneOf(
@@ -163,6 +177,8 @@ class Grammar(BaseGrammar):
     def _init_transforms(self):
         
         self.set_ast_transform('configstmt', self._trans_configstmt)
+        self.set_ast_transform('case_sensitive', self._trans_case_sensitive)
+        self.set_ast_transform('whitespace', self._trans_whitespace)
         self.set_ast_transform('tokenrule', self._trans_tokenrule)
         self.set_ast_transform('commentdef', self._trans_commentdef)
         self.set_ast_transform('stringdef', self._trans_stringdef)
@@ -176,8 +192,18 @@ class Grammar(BaseGrammar):
         self.set_ast_transform('ruleref', self._trans_ruleref)
         
     def _trans_configstmt(self, ast):
+        return ast.get_children()[0]
+        
+    def _trans_case_sensitive(self, ast):
         state = ast.get_children()[1].value
         return Ast('case_sensitive', state)
+
+    def _trans_whitespace(self, ast):
+        wschars = ast.find_children_by_id('wschars')
+        ret = Ast('whitespace')
+        for wschar in wschars:
+            ret.add_child(Ast('wschar', wschar.value))
+        return ret
     
     def _trans_tokenrule(self, ast):
         return ast.get_children()[0]
