@@ -96,19 +96,18 @@ class Generator(object):
         ws = ast.find_children_by_name('whitespace')
         if ws:
             ws = ws[0]
-            ret = []
+            ret = "["
+            first = True
             for wschar in ws.get_children():
-                v = wschar.value
-                if v == "\\n":
-                    v = "\n"
-                elif v == "\\t":
-                    v = "\t"
-                elif v == "\\r":
-                    v = "\r"
-                ret.append(v)
+                if not first:
+                    ret += ", "
+                else:
+                    first = False
+                ret += '"{}"'.format(wschar.value)
+            ret += "]"
             return ret
         else:
-            return [" ", "\t", "\r", "\n"]
+            return '[" ", "\t", "\r", "\n"]'
         
     def _get_tokens_and_rules(self, ast):
         tokens = []
