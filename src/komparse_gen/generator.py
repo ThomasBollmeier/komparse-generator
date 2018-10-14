@@ -149,8 +149,13 @@ class Generator(object):
         self._dedent()
         
     def _wrt_commentdef(self, commentdef):
-        start, end = commentdef.get_children()
-        line = "self.add_comment('{}', '{}')".format(start.value, end.value)
+        children = commentdef.get_children()
+        if len(children) == 2:
+            start, end = children
+            line = "self.add_comment('{}', '{}')".format(start.value, end.value)
+        else:
+            start, end, _ = children
+            line = "self.add_comment('{}', '{}', nestable=True)".format(start.value, end.value)
         self._writeln(line)
         
     def _wrt_stringdef(self, stringdef):

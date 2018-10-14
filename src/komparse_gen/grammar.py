@@ -26,6 +26,7 @@ class Grammar(BaseGrammar):
     def _init_tokens(self):
         
         self.add_comment("--", "\n")
+        self.add_comment("(*", "*)")
         self.add_string("'", "'", '#', 'STR')
         
         self.add_keyword('case_sensitive')
@@ -37,6 +38,7 @@ class Grammar(BaseGrammar):
 
         self.add_token('ON', 'on')
         self.add_token('OFF', 'off')
+        self.add_token('NESTABLE', 'nestable')
         self.add_token('ARROW', "->")
         self.add_token('LPAR', "\(")
         self.add_token('RPAR', "\)")
@@ -90,6 +92,7 @@ class Grammar(BaseGrammar):
             self.COMMENT(),
             self.STR('start'),
             self.STR('end'),
+            Optional(self.NESTABLE('nestable')),
             self.SEMICOLON()
         ))
     
@@ -214,6 +217,8 @@ class Grammar(BaseGrammar):
         end = ast.find_children_by_id('end')[0]
         ret.add_child(Ast('start', start.value))
         ret.add_child(Ast('end', end.value))
+        if ast.find_children_by_id('nestable'):
+            ret.add_child(Ast('nestable'))
         return ret
 
     def _trans_stringdef(self, ast):

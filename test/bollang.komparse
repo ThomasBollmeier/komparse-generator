@@ -1,9 +1,13 @@
--- My new language
+(*
+My new test language
+Author: Thomas Bollmeier <developer@thomas-bollmeier.de>
+*)
 
 case_sensitive off;
 whitespace ' ', '\n';
 
 comment ';' '\n';
+comment '{{' '}}' nestable;
 string '\#'' '\#'' STR;
 token LBRACE '{';
 token RBRACE '}';
