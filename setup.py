@@ -11,7 +11,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='komparse-generator',
-    version='0.9.5',
+    version='0.9.6',
     description='A parser generator tool',
     long_description=long_description,
     #url='', TODO: create website for komparse-generator

@@ -107,7 +107,7 @@ class Generator(object):
             ret += "]"
             return ret
         else:
-            return '[" ", "\t", "\r", "\n"]'
+            return '[" ", "\\t", "\\r", "\\n"]'
         
     def _get_tokens_and_rules(self, ast):
         tokens = []
