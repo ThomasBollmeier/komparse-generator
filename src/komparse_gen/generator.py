@@ -19,6 +19,7 @@ from argparse import ArgumentParser
 from komparse import Parser
 from .grammar import Grammar
 from .output import StdOut, FileOut
+from . import version
 
 
 class Generator(object):
@@ -298,11 +299,15 @@ def generate():
     parser.add_argument('-n', '--name',
                         help='name of the parser',
                         dest='parser_name')
+    parser.add_argument('--version',
+                        action='version',
+                        version=version)
+
     
     args = parser.parse_args()
     
     grammar_file = args.grammar_file
-    
+
     if args.parser_name:
         parser_name = args.parser_name
     else:

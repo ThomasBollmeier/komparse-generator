@@ -5,18 +5,22 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
+import sys
+sys.path.insert(0, path.join(here, 'src'))
+import komparse_gen
+
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
     name='komparse-generator',
-    version='0.9.6',
+    version=komparse_gen.version,
     description='A parser generator tool',
     long_description=long_description,
     #url='', TODO: create website for komparse-generator
     author='Thomas Bollmeier',
-    author_email='entwickler@tbollmeier.de',
+    author_email='developer@thomas-bollmeier.de',
     license='Apache-2.0',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -24,7 +28,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
