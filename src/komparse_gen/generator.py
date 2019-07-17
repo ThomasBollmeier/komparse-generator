@@ -133,8 +133,12 @@ class Generator(object):
     def visit_node(self, node):
         if node.name == "keyword":
             kw = node.value
-            self._keywords[kw.upper()] = kw
-        
+            self._keywords[self._keyword_id(kw)] = kw
+      
+    @staticmethod
+    def _keyword_id(keyword):
+         return kw.replace("-", "_").upper()
+              
     def _wrt_init_tokens(self, tokens):
         self._writeln("def _init_tokens(self):")
         self._indent()
@@ -145,8 +149,8 @@ class Generator(object):
                 self._wrt_stringdef(token)
             elif token.name == "tokendef":
                 self._wrt_tokendef(token)
-        for kw in self._keywords.values():
-            self._writeln("self.add_keyword('{}')".format(kw))
+        for kw_id, kw in self._keywords.items():
+            self._writeln("self.add_keyword('{}', name='{}')".format(kw, kw_id))
         self._dedent()
         
     def _wrt_commentdef(self, commentdef):
@@ -224,7 +228,7 @@ class Generator(object):
             if content.has_attr('data-id'):
                 id_ = content.get_attr('data-id')
         elif name == "keyword":
-            func_name = content.value.upper()
+            func_name = self._keyword_id(content.value)
         else:
             raise RuntimeError("Unknown content")
         
