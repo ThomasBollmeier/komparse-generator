@@ -137,7 +137,7 @@ class Generator(object):
       
     @staticmethod
     def _keyword_id(keyword):
-         return kw.replace("-", "_").upper()
+         return keyword.replace("-", "_").upper()
               
     def _wrt_init_tokens(self, tokens):
         self._writeln("def _init_tokens(self):")
